@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/S4Root/S4Root.iml" filepath="$PROJECT_DIR$/S4Root/S4Root.iml" />
+      <module fileurl="file://$PROJECT_DIR$/S4RootProject.iml" filepath="$PROJECT_DIR$/S4RootProject.iml" />
+    </modules>
+  </component>
+</project>
+
