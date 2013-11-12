@@ -3,12 +3,9 @@ package arevir.chris.s4root;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -16,12 +13,10 @@ import android.os.Build;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 // TODO: Make dialog popups black to match theme
@@ -29,7 +24,6 @@ import java.util.ArrayList;
 public class MainActivity extends Activity{
 
     String TARGET_BASE_PATH = "/storage/extSdCard/";
-    ArrayList<String> files;
     ProgressDialog dialog;
 
     @Override
@@ -100,29 +94,53 @@ public class MainActivity extends Activity{
     public void root(){
         Log.d("rooting", "enter root process");
         Log.d("rooting", "getting device name");
-        String device = getDeviceName();
+        String device = Build.MODEL;
         Log.d("rooting", "getting baseband version");
         String baseband = Build.getRadioVersion();
 
         // Checking that this is a Samsung Galaxy S4 running the MF3 firmware
         if(device.equals("SAMSUNG-SGH-I337") & baseband.equals("I337UCUAMF3")){
             Log.d("rooting", "correct phone");
-
             Log.d("rooting", "attempting to copy files from assets to root of external SD");
+
+            // Check for SD card availability
             if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
-                Log.d("rooting", "Mounted");
+                Log.d("rooting", "SD card is available");
                 copyFileOrDir("");
+            }
+            else{
+                Log.d("rooting", "No SD card present");
+                simpleAlertMessage("Hrm...", "There is no SD card present, or it is currently in use. Please insert one, or try again");
+                return;
             }
 
             // TODO: Execute pwn
-            //Log.d("rooting", "executing exploit");
+            Log.d("rooting", "executing exploit");
+            Process p;
+            try{
+                p = Runtime.getRuntime().exec("sh ./storage/extSdCard/pwn");
+                toasty("PWNing the phone, one moment...");
+            } catch(IOException io){
+                toasty("could not run exploit");
+                return;
+            }
 
-            // TODO: Execute script
-            // Log.d("rooting", "executing script");
+            // TODO: Execute install script
+            Log.d("rooting", "executing script");
+            Process s;
+            try {
+                s = Runtime.getRuntime().exec("sh /storage/extSdCard/script.sh");
+                toasty("Installing busybox and su...");
+            }catch(Exception e){
+                toasty("Could not run install script");
+                return;
+            }
 
-            // TODO: Clean up by deleting copied files
-            // Log.d("rooting", "executing cleanup procedure");
+            // Clean up by deleting copied files
+            Log.d("rooting", "executing cleanup procedure");
+            cleanUp();
 
+            simpleAlertMessage("Congrats!", "Rooting seems to have gone successful! Check if it truly went successful with the root checker button!");
         }
         else{
             Log.d("rooting", "incorrect phone");
@@ -131,21 +149,23 @@ public class MainActivity extends Activity{
     }
 
     //The next two methods modified from Yoram Cohen at http://stackoverflow.com/questions/4447477/android-how-to-copy-files-in-assets-to-sdcard
+    // Used for moving all of the files included in assets to root of external SD card
     private void copyFileOrDir(String path) {
         AssetManager assetManager = this.getAssets();
         String assets[] = null;
         try {
-            Log.d("tag", "copyFileOrDir() "+path);
+            Log.d("copying", "copyFileOrDir() "+path);
             assets = assetManager.list(path);
             if (assets.length == 0) {
                 copyFile(path);
             } else {
                 String fullPath =  TARGET_BASE_PATH + path;
-                Log.d("tag", "path="+fullPath);
+                Log.d("copying", "path="+fullPath);
                 File dir = new File(fullPath);
                 if (!dir.exists() && !path.startsWith("images") && !path.startsWith("sounds") && !path.startsWith("webkit") && !path.startsWith("kioskmode") && !path.startsWith("fonts"))
-                    if (!dir.mkdirs());
-                        Log.i("tag", "could not create dir "+fullPath);
+                    if (!dir.mkdirs()){
+                        Log.i("copying", "could not create dir "+fullPath);
+                    }
                 for (int i = 0; i < assets.length; ++i) {
                     String p;
                     if (path.equals(""))
@@ -158,7 +178,7 @@ public class MainActivity extends Activity{
                 }
             }
         } catch (IOException ex) {
-            Log.d("tag", "I/O Exception", ex);
+            Log.d("copying", "I/O Exception", ex);
         }
     }
 
@@ -169,7 +189,7 @@ public class MainActivity extends Activity{
         OutputStream out = null;
         String newFileName = null;
         try {
-            Log.d("tag", "copyFile() "+filename);
+            Log.d("copying", "copyFile() "+filename);
             in = assetManager.open(filename);
             if (filename.endsWith(".jpg")) // extension was added to avoid compression on APK file
                 newFileName = TARGET_BASE_PATH + filename.substring(0, filename.length()-4);
@@ -188,14 +208,28 @@ public class MainActivity extends Activity{
             out.close();
             out = null;
         } catch (Exception e) {
-            Log.d("tag", "Exception in copyFile() of "+newFileName);
-            Log.d("tag", "Exception in copyFile() "+e.toString());
+            Log.d("copying", "Exception in copyFile() of "+newFileName);
+            Log.d("copying", "Exception in copyFile() "+e.toString());
         }
 
     }
 
-    public String getDeviceName(){
-        return Build.MODEL;
+    void cleanUp(){
+        File script = new File(TARGET_BASE_PATH + "script.sh");
+        File pwn = new File(TARGET_BASE_PATH + "pwn");
+        File gs4ex = new File(TARGET_BASE_PATH + "gs4ex");
+
+        script.delete();
+        pwn.delete();
+        recursiveDelete(gs4ex);
+    }
+
+    void recursiveDelete(File file) {
+        if (file.isDirectory())
+            for (File child : file.listFiles())
+                recursiveDelete(child);
+
+        file.delete();
     }
 
     public void toasty(String message){
