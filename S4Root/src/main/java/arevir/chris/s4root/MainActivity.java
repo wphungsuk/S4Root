@@ -115,22 +115,12 @@ public class MainActivity extends Activity{
             }
 
             // TODO: Execute pwn
-            Log.d("rooting", "executing exploit");
-            Process p;
-            try{
-                p = Runtime.getRuntime().exec("sh ./storage/extSdCard/pwn");
-                toasty("PWNing the phone, one moment...");
-            } catch(IOException io){
-                toasty("could not run exploit");
-                return;
-            }
-
             // TODO: Execute install script
             Log.d("rooting", "executing script");
             Process s;
             try {
-                s = Runtime.getRuntime().exec("sh /storage/extSdCard/script.sh");
                 toasty("Installing busybox and su...");
+                s = Runtime.getRuntime().exec("sh ./storage/extSdCard/script.sh");
             }catch(Exception e){
                 toasty("Could not run install script");
                 return;

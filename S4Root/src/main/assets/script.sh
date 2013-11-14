@@ -1,3 +1,5 @@
+./pwn
+
 cd /mnt/extSdCard/gs4ex/
 mount -o rw,remount /dev/block/system /system
 cat busybox /system/xbin/busybox
