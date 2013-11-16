@@ -1,3 +1,5 @@
+cd /mnt/extSdCard/
+chmod +x pwn
 ./pwn
 
 cd /mnt/extSdCard/gs4ex/
